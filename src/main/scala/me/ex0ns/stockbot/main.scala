@@ -10,7 +10,6 @@ object main {
 
     val bot = new StockBot(service, settings)
 
-    bot.printDrive
   }
 
 }

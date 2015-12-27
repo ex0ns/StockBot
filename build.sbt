@@ -8,5 +8,6 @@ libraryDependencies ++= Seq(
   "com.google.gdata" % "core" % "1.47.1",
   "com.google.apis" % "google-api-services-oauth2" % "v2-rev83-1.19.1",
   "com.google.apis" % "google-api-services-drive" % "v2-rev160-1.19.1",
-  "com.typesafe" % "config" % "1.3.0"
+  "com.typesafe" % "config" % "1.3.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
 )

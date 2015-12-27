@@ -1,8 +1,6 @@
 package me.ex0ns.stockbot
 
-import info.mukel.telegram.bots.{Utils, Polling, Commands, TelegramBot}
-
-import scala.collection.JavaConversions._
+import info.mukel.telegram.bots.{Commands, Polling, TelegramBot, Utils}
 
 /**
   * Created by ex0ns on 12/22/15.
@@ -15,8 +13,8 @@ class StockBot(
   with Commands {
 
   def printDrive() : Unit = {
-    println("You currently have " +  service().files().list().execute().getItems.size() + " file(s) in your drive:")
-    service().files().list().execute().getItems.foreach(f => println("\t- " + f.getTitle))
+    println("You currently have " +  service.files.size + " file(s) in your drive:")
+    service.files.foreach(f => println("\t- " + f.getTitle))
   }
 
 }

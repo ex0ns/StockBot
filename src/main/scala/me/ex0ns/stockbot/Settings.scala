@@ -14,4 +14,5 @@ class Settings {
   val email = config.getString("drive-client.email")
   val keyPath = config.getString("drive-client.key-path")
   val botKeyPath = config.getString("telegram-client.key-path")
+  val filename = config.getString("drive-client.filename")
 }
