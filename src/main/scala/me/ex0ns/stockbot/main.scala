@@ -1,7 +1,5 @@
 package me.ex0ns.stockbot
 
-
-
 object main {
 
   def main(args: Array[String]) : Unit = {
@@ -10,6 +8,7 @@ object main {
 
     val bot = new StockBot(service, settings)
 
+    bot.getStockItems.foreach(println(_))
   }
 
 }

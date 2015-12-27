@@ -34,7 +34,9 @@ class DriveService(settings: Settings) {
     .build()
 
   private val service = new Drive.Builder(httpTransport, jsonFactory, null)
-    .setHttpRequestInitializer(credential).build()
+    .setHttpRequestInitializer(credential)
+    .setApplicationName(SERVICE_NAME)
+    .build()
 
   def apply() = service
 
@@ -48,26 +50,129 @@ class DriveService(settings: Settings) {
     }
   }
 
-  val spreadsheetsService = new SpreadsheetService(SERVICE_NAME)
+  private val spreadsheetsService = new SpreadsheetService(SERVICE_NAME)
   spreadsheetsService.setOAuth2Credentials(credential)
   logger.debug("File found, with id: " + file.getId)
 
-  val sheetURL = new URL("https://spreadsheets.google.com/feeds/worksheets/" + file.getId + "/private/full")
-  val worksheets : List[WorksheetEntry] = spreadsheetsService.getFeed(sheetURL,  classOf[WorksheetFeed]).getEntries.toList
+  private val sheetURL = new URL("https://spreadsheets.google.com/feeds/worksheets/" + file.getId + "/private/full")
+  private val worksheets : List[WorksheetEntry] = spreadsheetsService.getFeed(sheetURL,  classOf[WorksheetFeed]).getEntries.toList
 
-  val worksheet : Option[WorksheetEntry] = worksheets match {
+  private val worksheet : Option[WorksheetEntry] = worksheets match {
     case sheet :: sheets => Some(sheet)
     case _ =>
       logger.debug("Could not find any spreadsheets with this name")
       None
   }
 
-  worksheet.map(sheet => {
-    val cellFeedUrl = sheet.getCellFeedUrl
-    val cellFeed : List[CellEntry] = spreadsheetsService.getFeed(cellFeedUrl, classOf[CellFeed]).getEntries.toList
-    cellFeed.map(cell => {
-      println(cell.getCell.getInputValue + " at " + cell.getTitle.getPlainText)
-    })
-  })
+  /**
+    *
+    * @param filter
+    * @return
+    */
+  private def filterCells(filter : CellEntry => Boolean) : List[CellEntry] = {
+    worksheet match {
+      case Some(sheet) =>
+        val cellFeedUrl = sheet.getCellFeedUrl
+        val cellFeed : List[CellEntry] = spreadsheetsService.getFeed(cellFeedUrl, classOf[CellFeed]).getEntries.toList
+        cellFeed.filter(cell => filter(cell))
+      case None => List()
+    }
+  }
+
+  /**
+    *
+    * @param filter
+    * @return
+    */
+  private def filterCell(filter: CellEntry => Boolean) : Option[CellEntry] = {
+    filterCells(filter) match {
+      case cell :: cells => Some(cell)
+      case _ => None
+    }
+  }
+
+  private def findCellByText(text: String) : Option[CellEntry] =
+    filterCell(cell => cell.getCell.getInputValue.toLowerCase == text.toLowerCase)
+
+  private def getCell(row: Int, col: Int) : Option[CellEntry] =
+    filterCell(cell => cell.getCell.getRow == row && cell.getCell.getCol == col)
+
+  private def getNextCol(cell: Cell) : Option[CellEntry] = getCell(cell.getRow, cell.getCol + 1)
+  private def getNextRow(cell: Cell) : Option[CellEntry] = getCell(cell.getRow + 1, cell.getCol)
+
+  /**
+    *
+    * @param item
+    * @param value
+    * @return
+    */
+  private def changeStock(item: String, value: Int) = {
+    findCellByText(item) match {
+      case Some(cell) =>
+        getNextCol(cell.getCell) match {
+          case Some(nextCell) =>
+            val oldStock = nextCell.getCell.getValue.toInt
+            val newStock = oldStock + value
+            if(newStock < 0)  {
+              logger.debug("Could not have a negative stock")
+            } else {
+              nextCell.changeInputValueLocal(newStock.toString)
+              nextCell.update
+            }
+          case None => logger.debug("Unable to locate cell at (" + cell.getCell.getRow + "," + cell.getCell.getCol + ")")
+        }
+      case None =>
+    }
+  }
+
+  /**
+    *
+    * @param item
+    * @param value
+    * @return
+    */
+  def removeStock(item: String, value: Int) = {
+    if(value < 0) throw new IllegalArgumentException("Could not remove negative value from stock, please use addStock function")
+    changeStock(item, -value)
+  }
+
+  /**
+    *
+    * @param item
+    * @param value
+    * @return
+    */
+  def addStock(item: String, value: Int) = {
+    if (value < 0) throw new IllegalArgumentException("Could not add negative value to stock, please use removeStock function")
+    changeStock(item, value)
+  }
+
+  /**
+    *
+    * @return
+    */
+  private def getAllItemsName: List[String] = {
+    filterCells(cell => cell.getCell.getRow >= settings.startRow && settings.cols.contains(cell.getCell.getCol))
+      .map(cellEntry => cellEntry.getCell.getInputValue)
+  }
+
+  /**
+    *
+    * @return
+    */
+  private def getAllItemsCount: List[Int] = {
+    filterCells(cell => cell.getCell.getRow >= settings.startRow && settings.cols.map(c => c + 1).contains(cell.getCell.getCol))
+      .map(cellEntry => cellEntry.getCell.getInputValue.toInt)
+  }
+
+  /**
+    *
+    * @return
+    */
+  def getAllItems : List[Item] = {
+    getAllItemsName.zip(getAllItemsCount).map {
+      case (name, count) => new Item(name, count)
+    }
+  }
 
 }
