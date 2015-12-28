@@ -65,9 +65,11 @@ class DriveService(settings: Settings) {
   }
 
   /**
-    *
+    * Find cells in the spreadsheet with the given filter
     * @param filter
+    *         The filter to select the cells
     * @return
+    *         List of cells that matches the filter
     */
   private def filterCells(filter : CellEntry => Boolean) : List[CellEntry] = {
     worksheet match {
@@ -80,9 +82,11 @@ class DriveService(settings: Settings) {
   }
 
   /**
-    *
+    * Find a cell entry based on the given filter
     * @param filter
+    *         The filter to select the cells
     * @return
+    *         The first cell matching the given filter
     */
   private def filterCell(filter: CellEntry => Boolean) : Option[CellEntry] = {
     filterCells(filter) match {
@@ -100,12 +104,6 @@ class DriveService(settings: Settings) {
   private def getNextCol(cell: Cell) : Option[CellEntry] = getCell(cell.getRow, cell.getCol + 1)
   private def getNextRow(cell: Cell) : Option[CellEntry] = getCell(cell.getRow + 1, cell.getCol)
 
-  /**
-    *
-    * @param item
-    * @param value
-    * @return
-    */
   private def changeStock(item: String, value: Int) = {
     findCellByText(item) match {
       case Some(cell) =>
@@ -126,48 +124,45 @@ class DriveService(settings: Settings) {
   }
 
   /**
-    *
+    * Remove stock of an item
     * @param item
+    *             The item to change the stock of
     * @param value
+    *             The number of items to remove
     * @return
     */
-  def removeStock(item: String, value: Int) = {
+  def removeStock(item: String, value: Int) : Unit = {
     if(value < 0) throw new IllegalArgumentException("Could not remove negative value from stock, please use addStock function")
     changeStock(item, -value)
   }
 
   /**
-    *
+    * Add stock of the given item
     * @param item
+    *             The item to change the stock of
     * @param value
+    *              The number of items to add
     * @return
     */
-  def addStock(item: String, value: Int) = {
+  def addStock(item: String, value: Int) : Unit = {
     if (value < 0) throw new IllegalArgumentException("Could not add negative value to stock, please use removeStock function")
     changeStock(item, value)
   }
 
-  /**
-    *
-    * @return
-    */
   private def getAllItemsName: List[String] = {
     filterCells(cell => cell.getCell.getRow >= settings.startRow && settings.cols.contains(cell.getCell.getCol))
       .map(cellEntry => cellEntry.getCell.getInputValue)
   }
 
-  /**
-    *
-    * @return
-    */
   private def getAllItemsCount: List[Int] = {
     filterCells(cell => cell.getCell.getRow >= settings.startRow && settings.cols.map(c => c + 1).contains(cell.getCell.getCol))
       .map(cellEntry => cellEntry.getCell.getInputValue.toInt)
   }
 
   /**
-    *
+    * Return all the items described in the spreadsheet
     * @return
+    *         List of array described in the spreadsheet
     */
   def getAllItems : List[Item] = {
     getAllItemsName.zip(getAllItemsCount).map {
