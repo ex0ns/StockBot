@@ -12,6 +12,7 @@ import com.google.gdata.client.spreadsheet.SpreadsheetService
 import com.google.gdata.data.spreadsheet._
 
 import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 
 /**
   * Created by ex0ns on 12/22/15.
@@ -20,7 +21,7 @@ class DriveService(settings: Settings) {
 
   private val SCOPE_SPREADSHEET = "https://spreadsheets.google.com/feeds"
   private val SERVICE_NAME = classOf[DriveService].getSimpleName
-  private val logger = Logger(LoggerFactory.getLogger(SERVICE_NAME))
+  private val logger = Logger(LoggerFactory.getLogger(classOf[DriveService]))
 
   private val emailAddress = settings.email
   private val jsonFactory = JacksonFactory.getDefaultInstance
@@ -37,6 +38,8 @@ class DriveService(settings: Settings) {
     .setHttpRequestInitializer(credential)
     .setApplicationName(SERVICE_NAME)
     .build()
+
+  implicit  def toOption[T](obj: T) : Option[T] = Option(obj)
 
   def apply() = service
 
@@ -119,7 +122,7 @@ class DriveService(settings: Settings) {
             }
           case None => logger.debug("Unable to locate cell at (" + cell.getCell.getRow + "," + cell.getCell.getCol + ")")
         }
-      case None =>
+      case None => logger.debug("Item is not in stock, you may want to use `addItem` instead !")
     }
   }
 
@@ -157,6 +160,52 @@ class DriveService(settings: Settings) {
   private def getAllItemsCount: List[Int] = {
     filterCells(cell => cell.getCell.getRow >= settings.startRow && settings.cols.map(c => c + 1).contains(cell.getCell.getCol))
       .map(cellEntry => cellEntry.getCell.getInputValue.toInt)
+  }
+
+  private def exists(item: String) : Boolean = getAllItemsName.map(_.toLowerCase).contains(item)
+
+  private def rowsInCol(sheet: WorksheetEntry, col: Int) : Int = {
+    val url = new URL(sheet.getCellFeedUrl.toString + "?min-col=" + col.toString + "&max-col=" + col.toString)
+    val cellFeed = spreadsheetsService.getFeed(url, classOf[CellFeed])
+    cellFeed.getTotalResults
+  }
+
+  private def findNewItemCell(defaultValue: String = "") : Option[CellEntry] = {
+    worksheet match {
+      case Some(sheet) =>
+        val position = settings.cols.map(col => {
+          (col, rowsInCol(sheet, col))
+        }).minBy(_._2)
+        new CellEntry(position._2 + 1, position._1, defaultValue)
+      case None => None
+    }
+  }
+
+  /**
+    * Add a new item in the spreadsheet (if not already present)
+    * @param item
+    *             The name of the item to add
+    * @param initialValue
+    *             THe initial stock of the item
+    */
+  def addItem(item: String, initialValue: Int) : Unit = {
+    if(exists(item)) {
+      logger.debug("Item is already in the spreadsheet")
+    } else {
+      worksheet match {
+        case Some(sheet) =>
+          val url : URL = sheet.getCellFeedUrl
+          val cellFeed = spreadsheetsService.getFeed(url, classOf[CellFeed])
+          findNewItemCell(item) match {
+            case Some(cell) =>
+              cellFeed.insert(cell)
+              val valueCell = new CellEntry(cell.getCell.getRow, cell.getCell.getCol + 1, initialValue.toString)
+              cellFeed.insert(valueCell)
+            case None => logger.debug("Could not find a cell to insert new item to")
+          }
+        case None =>
+      }
+    }
   }
 
   /**

@@ -12,11 +12,8 @@ class StockBot(
   with Polling
   with Commands {
 
-  def printDrive : Unit = {
-    println("You currently have " +  service.files.size + " file(s) in your drive:")
-    service.files.foreach(f => println("\t- " + f.getTitle))
-  }
-
   def getStockItems : List[Item] = service.getAllItems
+
+  def addItem(name: String, count: Int) = service.addItem(name, count)
 
 }

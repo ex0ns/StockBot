@@ -8,6 +8,7 @@ object main {
 
     val bot = new StockBot(service, settings)
 
+    println("You have the following item(s) in stock:")
     bot.getStockItems.foreach(println(_))
   }
 
