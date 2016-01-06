@@ -1,8 +1,10 @@
 package me.ex0ns.stockbot.bot
 
+import com.typesafe.scalalogging.Logger
 import info.mukel.telegram.bots.{Commands, Polling, TelegramBot, Utils}
 import me.ex0ns.stockbot.drive.{DriveService, Item}
 import me.ex0ns.stockbot.Settings
+import org.slf4j.LoggerFactory
 
 
 /**
@@ -16,7 +18,7 @@ object StockBot {
   private val bot : StockBot = new StockBot(service, settings)
 
   def apply() = {
-    println("Bot is up and running !")
+    bot.logger.debug("Bot is up and running !")
 
     bot.on("ls") { (sender, _) =>
       bot.replyTo(sender) {
@@ -35,6 +37,8 @@ class StockBot(
   extends TelegramBot(Utils.tokenFromFile(settings.botKeyPath))
   with Polling
   with Commands {
+
+  private val logger = Logger(LoggerFactory.getLogger(classOf[StockBot]))
 
   def getStockItems : List[Item] = service.getAllItems
 

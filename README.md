@@ -28,7 +28,9 @@ The base configuration:
 drive-client {
   email="stockbot@telegrambot-1166.iam.gserviceaccount.com" // Email of the Drive Service Account 
   key-path="keys/drive.p12" // Path to the drive key
-  filename="stock.xsls" // The sheet's name
+  filename="stock" // The sheet's name
+  start-row=2 // The row from which there are items
+  cols=[1,3] // The columns that contains items
 }
 
 telegram-client {
@@ -37,7 +39,7 @@ telegram-client {
 
 ```
 
-You are go to go ! The last step is to share the stock sheet you want the bot to manage to the Service Account email
+You are good to go ! The last step is to share the stock sheet you want the bot to manage to the Service Account email
 so the bot can access it.
 
 ### Contribute
