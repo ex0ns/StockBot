@@ -1,8 +1,7 @@
-package me.ex0ns.stockbot
+package me.ex0ns.stockbot.drive
 
 import java.net.URL
-import com.typesafe.scalalogging.Logger
-import org.slf4j.LoggerFactory
+
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
@@ -10,9 +9,12 @@ import com.google.api.services.drive.model.File
 import com.google.api.services.drive.{Drive, DriveScopes}
 import com.google.gdata.client.spreadsheet.SpreadsheetService
 import com.google.gdata.data.spreadsheet._
+import com.typesafe.scalalogging.Logger
+import me.ex0ns.stockbot.Settings
+import me.ex0ns.stockbot.utils.OptionsUtils._
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
-import scala.language.implicitConversions
 
 /**
   * Created by ex0ns on 12/22/15.
@@ -38,8 +40,6 @@ class DriveService(settings: Settings) {
     .setHttpRequestInitializer(credential)
     .setApplicationName(SERVICE_NAME)
     .build()
-
-  implicit  def toOption[T](obj: T) : Option[T] = Option(obj)
 
   def apply() = service
 
