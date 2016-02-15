@@ -73,7 +73,7 @@ class DriveService(settings: Settings) {
     val files = this.files.filter(f => f.getTitle == settings.filename)
     files match {
       case f :: fs => f
-      case _ => throw  new NoSuchElementException("Could not locate: '" + settings.filename + "' in Drive")
+      case _ => throw  new NoSuchElementException(Strings.NO_SUCH_FILE(settings.filename))
     }
   }
 
@@ -87,7 +87,7 @@ class DriveService(settings: Settings) {
   private val worksheet : Option[WorksheetEntry] = worksheets match {
     case sheet :: sheets => sheet
     case _ =>
-      logger.debug("Could not find any spreadsheets with this name")
+      logger.debug(Strings.WRONG_WORKSHEET_NAME)
       None
   }
 

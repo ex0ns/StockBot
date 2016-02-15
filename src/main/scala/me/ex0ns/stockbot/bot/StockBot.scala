@@ -5,6 +5,7 @@ import info.mukel.telegram.bots.{Commands, Polling, TelegramBot, Utils}
 import me.ex0ns.stockbot.drive.DriveService.DriveMessage
 import me.ex0ns.stockbot.drive.{DriveService, Item}
 import me.ex0ns.stockbot.Settings
+import me.ex0ns.stockbot.utils.Strings
 import org.slf4j.LoggerFactory
 
 
@@ -23,7 +24,7 @@ object StockBot {
     bot.on("ls") { (sender, _) =>
       bot.replyTo(sender) {
         val items = bot.getStockItems.map(_.toString())
-        s"You currently have ${items.length} items in stock:\n${items.mkString("\n")}"
+        Strings.CURRENT_STOCK(items.length, items.mkString("\n"))
       }
     }
 
@@ -34,8 +35,7 @@ object StockBot {
         } else {
           bot.removeItem(args.head, args(1).toInt) match {
             case DriveMessage(true, msg) => msg
-            case DriveMessage(false, stock) =>
-              s"Removed ${args(1)} of ${args.head}, $stock remaining"
+            case DriveMessage(false, stock) => Strings.REMOVE_STOCK(args.head, args(1), stock)
           }
         }
       }
@@ -48,7 +48,7 @@ object StockBot {
         } else {
           bot.addItem(args.head, args(1).toInt) match {
             case DriveMessage(true, msg) => msg
-            case DriveMessage(false, stock) => s"There is now $stock remaining ${args.head}"
+            case DriveMessage(false, stock) => Strings.ADD_STOCK(args.head, stock)
           }
         }
       }
