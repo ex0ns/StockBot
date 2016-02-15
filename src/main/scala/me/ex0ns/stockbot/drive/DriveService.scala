@@ -11,7 +11,9 @@ import com.google.gdata.client.spreadsheet.SpreadsheetService
 import com.google.gdata.data.spreadsheet._
 import com.typesafe.scalalogging.Logger
 import me.ex0ns.stockbot.Settings
+import me.ex0ns.stockbot.drive.DriveService.DriveMessage
 import me.ex0ns.stockbot.utils.OptionsUtils._
+import me.ex0ns.stockbot.utils.Strings
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
@@ -19,7 +21,29 @@ import scala.collection.JavaConversions._
 /**
   * Created by ex0ns on 12/22/15.
   */
+
+object DriveService {
+  case class DriveMessage(error: Boolean, message: String = "")
+}
+
 class DriveService(settings: Settings) {
+
+  /**
+    * Improved logger object to return a DriveMessage object
+    * @param logger
+    *               The logger to pimp
+    */
+  implicit class LoggerDrive(logger: Logger) {
+    def debugDrive(text: String) : DriveMessage = {
+      logger.debug(text)
+      new DriveMessage(false, text)
+    }
+
+    def errorDrive(text: String) : DriveMessage = {
+      logger.error(text)
+      new DriveMessage(true, text)
+    }
+  }
 
   private val SCOPE_SPREADSHEET = "https://spreadsheets.google.com/feeds"
   private val SERVICE_NAME = classOf[DriveService].getSimpleName
@@ -61,7 +85,7 @@ class DriveService(settings: Settings) {
   private val worksheets : List[WorksheetEntry] = spreadsheetsService.getFeed(sheetURL,  classOf[WorksheetFeed]).getEntries.toList
 
   private val worksheet : Option[WorksheetEntry] = worksheets match {
-    case sheet :: sheets => Some(sheet)
+    case sheet :: sheets => sheet
     case _ =>
       logger.debug("Could not find any spreadsheets with this name")
       None
@@ -93,7 +117,7 @@ class DriveService(settings: Settings) {
     */
   private def filterCell(filter: CellEntry => Boolean) : Option[CellEntry] = {
     filterCells(filter) match {
-      case cell :: cells => Some(cell)
+      case cell :: cells => cell
       case _ => None
     }
   }
@@ -107,7 +131,7 @@ class DriveService(settings: Settings) {
   private def getNextCol(cell: Cell) : Option[CellEntry] = getCell(cell.getRow, cell.getCol + 1)
   private def getNextRow(cell: Cell) : Option[CellEntry] = getCell(cell.getRow + 1, cell.getCol)
 
-  private def changeStock(item: String, value: Int) = {
+  private def changeStock(item: String, value: Int) : DriveMessage = {
     findCellByText(item) match {
       case Some(cell) =>
         getNextCol(cell.getCell) match {
@@ -115,14 +139,17 @@ class DriveService(settings: Settings) {
             val oldStock = nextCell.getCell.getValue.toInt
             val newStock = oldStock + value
             if(newStock < 0)  {
-              logger.debug("Could not have a negative stock")
+              logger.errorDrive(Strings.NEGATIVE_STOCK)
             } else {
               nextCell.changeInputValueLocal(newStock.toString)
               nextCell.update
+              new DriveMessage(false, newStock.toString)
             }
-          case None => logger.debug("Unable to locate cell at (" + cell.getCell.getRow + "," + cell.getCell.getCol + ")")
+          case None =>
+            logger.errorDrive(Strings.CELL_NOT_FOUND(cell.getCell.getRow, cell.getCell.getCol))
         }
-      case None => logger.debug("Item is not in stock, you may want to use `addItem` instead !")
+      case None =>
+        logger.errorDrive(Strings.NOT_IN_STOCK)
     }
   }
 
@@ -134,7 +161,7 @@ class DriveService(settings: Settings) {
     *             The number of items to remove
     * @return
     */
-  def removeStock(item: String, value: Int) : Unit = {
+  def removeStock(item: String, value: Int) : DriveMessage = {
     if(value < 0) throw new IllegalArgumentException("Could not remove negative value from stock, please use addStock function")
     changeStock(item, -value)
   }
@@ -147,7 +174,7 @@ class DriveService(settings: Settings) {
     *              The number of items to add
     * @return
     */
-  def addStock(item: String, value: Int) : Unit = {
+  def addStock(item: String, value: Int) : DriveMessage = {
     if (value < 0) throw new IllegalArgumentException("Could not add negative value to stock, please use removeStock function")
     changeStock(item, value)
   }
@@ -188,9 +215,10 @@ class DriveService(settings: Settings) {
     * @param initialValue
     *             THe initial stock of the item
     */
-  def addItem(item: String, initialValue: Int) : Unit = {
+  def addItem(item: String, initialValue: Int) : DriveMessage = {
     if(exists(item)) {
-      logger.debug("Item is already in the spreadsheet")
+      logger.debug(Strings.ALREADY_EXISTS)
+      addStock(item, initialValue)
     } else {
       worksheet match {
         case Some(sheet) =>
@@ -201,9 +229,12 @@ class DriveService(settings: Settings) {
               cellFeed.insert(cell)
               val valueCell = new CellEntry(cell.getCell.getRow, cell.getCell.getCol + 1, initialValue.toString)
               cellFeed.insert(valueCell)
-            case None => logger.debug("Could not find a cell to insert new item to")
+              new DriveMessage(false, initialValue.toString)
+            case None =>
+              logger.errorDrive(Strings.NO_CELL_FOUND)
           }
         case None =>
+          logger.errorDrive(Strings.NO_WORKSHEET)
       }
     }
   }
