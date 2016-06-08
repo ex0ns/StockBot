@@ -162,7 +162,7 @@ class DriveService(settings: Settings) {
     * @return
     */
   def removeStock(item: String, value: Int) : DriveMessage = {
-    if(value < 0) throw new IllegalArgumentException("Could not remove negative value from stock, please use addStock function")
+    if(value < 0) throw new IllegalArgumentException(Strings.WRONG_RM_PARAMETER)
     changeStock(item, -value)
   }
 
@@ -175,7 +175,7 @@ class DriveService(settings: Settings) {
     * @return
     */
   def addStock(item: String, value: Int) : DriveMessage = {
-    if (value < 0) throw new IllegalArgumentException("Could not add negative value to stock, please use removeStock function")
+    if (value < 0) throw new IllegalArgumentException(Strings.WRONG_ADD_PARAMETER)
     changeStock(item, value)
   }
 
@@ -189,7 +189,7 @@ class DriveService(settings: Settings) {
       .map(cellEntry => cellEntry.getCell.getInputValue.toInt)
   }
 
-  private def exists(item: String) : Boolean = getAllItemsName.map(_.toLowerCase).contains(item)
+  private def exists(item: String) : Boolean = getAllItemsName.map(_.toLowerCase).contains(item.toLowerCase)
 
   private def rowsInCol(sheet: WorksheetEntry, col: Int) : Int = {
     val url = new URL(sheet.getCellFeedUrl.toString + "?min-col=" + col.toString + "&max-col=" + col.toString)

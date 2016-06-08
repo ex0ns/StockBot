@@ -2,6 +2,7 @@ package me.ex0ns.stockbot
 
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 
 /**
   * Created by ex0ns on 12/22/15.
