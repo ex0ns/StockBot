@@ -34,12 +34,15 @@ object StockBot {
     bot.onCommand("rm") { implicit msg =>
       bot.withArgs { args =>
         bot.reply({
-          if (args.size != 2) {
+          if (args.size < 2) {
             bot.usage
           } else {
-            bot.removeItem(args.head, args(1).toInt) match {
+            val itemName = args.dropRight(1).mkString(" ")
+            val itemCount = args.last
+
+            bot.removeItem(itemName, itemCount.toInt) match {
               case DriveMessage(true, msg) => msg
-              case DriveMessage(false, stock) => Strings.REMOVE_STOCK(args.head, args(1), stock)
+              case DriveMessage(false, stock) => Strings.REMOVE_STOCK(itemName, itemCount, stock)
             }
           }
         })
@@ -49,12 +52,15 @@ object StockBot {
     bot.onCommand("add") { implicit msg =>
       bot.withArgs { args =>
         bot.reply({
-          if (args.size != 2) {
+          if (args.size < 2) {
             bot.usage
           } else {
-            bot.addItem(args.head, args(1).toInt) match {
+            val itemName = args.dropRight(1).mkString(" ")
+            val itemCount = args.last
+
+            bot.addItem(itemName, itemCount.toInt) match {
               case DriveMessage(true, msg) => msg
-              case DriveMessage(false, stock) => Strings.ADD_STOCK(args.head, stock)
+              case DriveMessage(false, stock) => Strings.ADD_STOCK(itemName, stock)
             }
           }
         })

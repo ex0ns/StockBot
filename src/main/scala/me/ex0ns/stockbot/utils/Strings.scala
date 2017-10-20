@@ -17,6 +17,6 @@ object Strings {
   def NO_SUCH_FILE(filename: String) = s"Could not locate: '$filename' in Drive"
   def CURRENT_STOCK(size: Int, data: String) = s"You currently have $size items in stock:\n$data"
   def REMOVE_STOCK(name: String, quantity: String, remaining: String) =
-    s"Removed $name of $quantity, $remaining remaining"
+    s"Removed $quantity of $name, $remaining remaining"
   def ADD_STOCK(name: String, quantity: String) = s"There is now $quantity remaining $name"
 }
